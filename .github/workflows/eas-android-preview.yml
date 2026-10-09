@@ -1,0 +1,49 @@
+name: EAS Build - Android Preview
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout your repository
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      # 3️⃣ Cache node_modules
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Install EAS CLI
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      # 5️⃣ Set Expo token for CI/CD
+      - name: Set Expo token
+        run: echo "EXPO_TOKEN=${{ secrets.PREVIEW_ANDROID_CICD_TOKEN }}" >> $GITHUB_ENV
+
+      # 6️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 7️⃣ Trigger Android preview build
+      - name: EAS Build Android Preview
+        run: eas build --platform android --profile preview --non-interactive

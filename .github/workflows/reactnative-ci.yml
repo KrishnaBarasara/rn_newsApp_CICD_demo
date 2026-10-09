@@ -1,0 +1,80 @@
+name: Build and Distribute (Firebase)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  android:
+    name: Build Android and Upload to Firebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd android && chmod +x gradlew && cd ..
+
+      - name: Build Android APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+          cd ..
+
+      - name: Upload Android to Firebase
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.ANDROID_FIREBASE_APP_ID }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: testers
+          file: android/app/build/outputs/apk/release/app-release.apk
+
+  ios:
+    name: Build iOS Simulator App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build iOS App (Simulator)
+        run: |
+          cd ios
+          xcodebuild -workspace RNtestTask.xcworkspace \
+            -scheme RNtestTask \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -derivedDataPath build
+          cd ..
+
+      # Optional: Upload simulator .app file to Firebase for record (not installable)
+      - name: Upload iOS to Firebase
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.IOS_FIREBASE_APP_ID }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: testers
+          file: ios/build/Build/Products/Release-iphonesimulator/RNtestTask.app

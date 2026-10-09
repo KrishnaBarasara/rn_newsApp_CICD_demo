@@ -1,0 +1,31 @@
+name: EAS Build - iOS Preview
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ios-preview:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Set Expo Token
+        run: echo "EXPO_TOKEN=${{ secrets.Preview_ios_CICD_token }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build iOS Preview
+        run: eas build --platform ios --profile preview --non-interactive

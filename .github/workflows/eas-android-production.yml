@@ -1,0 +1,51 @@
+name: EAS Build - Android Production
+
+on:
+  push:
+    branches:
+      - main   # 🔹 Trigger production build when pushing to main branch
+  workflow_dispatch:   # 🔹 Allow manual trigger from GitHub Actions tab
+
+jobs:
+  android-production:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      # 3️⃣ Cache node_modules for faster installs
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Install EAS CLI globally
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      # 5️⃣ Set Expo token (same for all profiles)
+      - name: Set Expo token
+        run: echo "EXPO_TOKEN=${{ secrets.PREVIEW_ANDROID_CICD_TOKEN }}" >> $GITHUB_ENV
+
+      # 6️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 7️⃣ Run EAS Production Build
+      - name: EAS Build Android Production
+        run: eas build --platform android --profile production --non-interactive
+
+      # 8️⃣ (Optional) Submit to Play Store if configured later
+      # - name: Submit to Google Play Internal Testing
+      #   run: eas submit --platform android --profile production --non-interactive
